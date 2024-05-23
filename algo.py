@@ -1,6 +1,40 @@
 import math
 import heapq
 
+hour = 14 #assuming hour to be constant now, later will update it to take off timing
+
+weatherCodeStatus = {
+    "0": "Clear sky",
+    "1": "Mainly clear",
+    "2": "Partly cloudy",
+    "3": "Heavily cloudy (overcast)",
+    "45": "Fog",
+    "48": "Depositing rime fog",
+    "51": "Light drizzle",
+    "53": "Moderate drizzle",
+    "55": "Dense drizzle",
+    "56": "Freezing drizzle light",
+    "57": "Freezing drizzle dense",
+    "61": "Slight rain",
+    "63": "Moderate rain",
+    "65": "Heavy rain",
+    "66": "Freezing rain light",
+    "67": "Freezing rain heavy",
+    "71": "Slight snow fall",
+    "73": "Moderate snow fall",
+    "75": "Heavy snow fall",
+    "77": "Snow grains",
+    "80": "Slight rain showers",
+    "81": "Moderate rain showers",
+    "82": "Violent rain showers",
+    "85": "Slight snow showers",
+    "86": "Heavy snow showers",
+    "95": "Slight or moderate thunderstorm",
+    "96": "Thunderstorm with slight hail",
+    "99": "Thunderstorm with heavy hail"
+}
+
+
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371  # Earth radius in km
     phi1 = math.radians(lat1)
@@ -31,12 +65,10 @@ def get_node_index(coordinates, node):
                 index = (i,j)
     return index
                 
-def a_star(coordinates, weather, start, goal):
+def a_star(coordinates, start, goal):
     directions = [ [0,1], [1,0], [0,-1], [-1,0], [1,1], [1,-1], [-1,1], [-1,-1] ]
     rows = len(coordinates)
     cols = len(coordinates[0])
-    # print(f"rows : {rows}")
-    # print(f"cols : {cols}")
     open_set = [(0,start)]
     came_from = {}
     g_score = [[float('inf') for j in range(cols)] for i in range(rows)]
@@ -52,20 +84,29 @@ def a_star(coordinates, weather, start, goal):
         if current == goal:
             total_path = []
             while current in came_from:
-                total_path.append({"lat" : coordinates[current[0]][current[1]]['lat'], "long" : coordinates[current[0]][current[1]]['long']})
+                weather_code = str(coordinates[current[0]][current[1]]['formattedHourlyData'][hour]['weatherCode'])
+                total_path.append({
+                        "lat" : coordinates[current[0]][current[1]]['lat'], 
+                        "long" : coordinates[current[0]][current[1]]['long'],
+                        "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
+                    })
                 # total_path.append(current)
                 current = came_from[current]
-            total_path.append({"lat" : coordinates[start[0]][start[1]]['lat'], "long" : coordinates[start[0]][start[1]]['long']})
+            weather_code = str(coordinates[start[0]][start[1]]['formattedHourlyData'][hour]['weatherCode'])
+            total_path.append({
+                "lat" : coordinates[start[0]][start[1]]['lat'], 
+                "long" : coordinates[start[0]][start[1]]['long'],
+                "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
+                })
             # total_path.append(start)
             return (f_score[goal[0]][goal[1]], total_path[::-1])
         
         for d in directions:
             x = i + d[0]
             y = j + d[1]
-            # print(f"x : {x}")
-            # print(f"y : {y}")
 
             if x >= 0 and x < rows and y >= 0 and y < cols:
+                # current is (i,j)
                 # neighbour is (x,y)
                 weight = haversine(
                     coordinates[x][y]['lat'], 
@@ -81,22 +122,12 @@ def a_star(coordinates, weather, start, goal):
                     f_score[x][y] = g_score[x][y] + haversine(coordinates[x][y]['lat'], coordinates[x][y]['long'], coordinates[goal[0]][goal[1]]['lat'], coordinates[goal[0]][goal[1]]['long'])
                     heapq.heappush(open_set, (f_score[x][y], (x,y)))
 
-        # for neighbor in coordinates[current[0]][current[1]]:
-        #     weight = weather[neighbor] * haversine(coordinates[neighbor][0],coordinates[neighbor][1],coordinates[current][0],coordinates[current][1])
-        #     tentative_g_score = g_score[current] + weight
-
-        #     if tentative_g_score < g_score[neighbor]:
-        #         came_from[neighbor] = current
-        #         g_score[neighbor] = tentative_g_score
-        #         f_score[neighbor] = g_score[neighbor] + haversine(coordinates[neighbor][0], coordinates[neighbor][1], coordinates[goal][0], coordinates[goal][1])
-        #         heapq.heappush(open_set, (f_score[neighbor], neighbor))
-
     return None
 
-def get_path(coordinates, weather, source, destination):
+def get_path(coordinates, source, destination):
     sourceIndex = get_node_index(coordinates,source)
     destinationIndex = get_node_index(coordinates,destination)
 
-    path = a_star(coordinates,weather,sourceIndex,destinationIndex)
+    path = a_star(coordinates,sourceIndex,destinationIndex)
 
     return path

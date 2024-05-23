@@ -8,7 +8,6 @@ class Item(BaseModel):
     source : dict
     destination : dict
     coordinates: list
-    weather: list
 
 @app.get("/")
 async def root() :
@@ -16,7 +15,7 @@ async def root() :
 
 @app.post("/")
 async def getData(item : Item):
-    data = get_path(item.coordinates, item.weather, item.source, item.destination)
+    data = get_path(item.coordinates, item.source, item.destination)
     return {"distance" : data[0],"path" : data[1]}
 
 
