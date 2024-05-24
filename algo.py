@@ -154,15 +154,6 @@ def a_star(coordinates, start, goal):
     return None
 
 def get_path(coordinates, source, destination):
-    print(f"rows = {len(coordinates)}")
-    for i,l in enumerate(coordinates):
-        # print(f"row {i+1} size = {len(l)}")
-        print(f"row {i+1}",end=" ")
-        for j,ll in enumerate(l):
-            print(f"({ll['lat']},{ll['long']})",end=' ')
-        print()
-
-
     
     total_distance = haversine(source['lat'], source['long'], destination['lat'], destination['long'])
     sourceIndex = get_node_index(coordinates,source)
