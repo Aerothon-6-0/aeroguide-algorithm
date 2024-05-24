@@ -18,9 +18,12 @@ async def getData(item : Item):
     data = get_path(item.coordinates, item.source, item.destination)
     return {
         "distance" : data[0],
-        "risk_percentage" : data[2],
-        "risk_message" : data[3],
-        "path" :data[1]
+        "path1_risk_percentage" : data[2],
+        "path1_risk_message" : data[3],
+        "path1" :data[1],
+        "path2_risk_percentage" : data[5],
+        "path2_risk_message" : data[6],
+        "path2" :data[4],
     }
 
 

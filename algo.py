@@ -1,6 +1,7 @@
 import math
 import heapq
 from risk import get_risk_details
+from collections import deque
 
 hour = 14 #assuming hour to be constant now, later will update it to take off timing
 
@@ -82,10 +83,11 @@ def get_weather_factor(weather_details):
 
     return 1 + rainFactor + wcodeFactor + visibilityFactor + windSpeedFactor
 
-path_labels = []
+path_labels_astar = []
+path_labels_bfs = []
+directions = [ [0,1], [1,0], [0,-1], [-1,0], [1,1], [1,-1], [-1,1], [-1,-1] ]
 
 def a_star(coordinates, start, goal):
-    directions = [ [0,1], [1,0], [0,-1], [-1,0], [1,1], [1,-1], [-1,1], [-1,-1] ]
     rows = len(coordinates)
     cols = len(coordinates[0])
     open_set = [(0,start)]
@@ -111,7 +113,7 @@ def a_star(coordinates, start, goal):
                         "long" : coordinates[current[0]][current[1]]['long'],
                         "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
                     })
-                path_labels.append((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
+                path_labels_astar.append((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
                 # total_path.append(current)
                 current = came_from[current]
             start_weather_code = str(coordinates[start[0]][start[1]]['formattedHourlyData'][hour]['weatherCode'])
@@ -121,7 +123,7 @@ def a_star(coordinates, start, goal):
                 "long" : coordinates[start[0]][start[1]]['long'],
                 "status" : weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "Not defined"
                 })
-            path_labels.append(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
+            path_labels_astar.append(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
             # total_path.append(start)
             return (total_path[::-1])
         
@@ -153,12 +155,76 @@ def a_star(coordinates, start, goal):
 
     return None
 
+def bfs(coordinates, start, goal):
+    rows, cols = len(coordinates), len(coordinates[0])
+    start_row, start_col = start
+    goal_row, goal_col = goal
+
+    # Check if the starting or goal point is within the bounds of the matrix
+    if not (0 <= start_row < rows and 0 <= start_col < cols) or not (0 <= goal_row < rows and 0 <= goal_col < cols):
+        return None
+
+    # Initialize a queue and visited set
+    queue = deque([(start_row, start_col, [])])
+    visited = set()
+    came_from = {}
+    visited.add((start_row, start_col))
+
+    while queue:
+        current_row, current_col, path = queue.popleft()
+        print(current_row,current_col)
+        # path = path + [(current_row, current_col)]
+
+        # If we reach the goal, return the path
+        if (current_row, current_col) == goal:
+            current = goal
+            total_path = []
+            while current in came_from:
+                weather_code = str(coordinates[current[0]][current[1]]['formattedHourlyData'][hour]['weatherCode'])
+                total_path.append({
+                        # "x,y" : current,
+                        "lat" : coordinates[current[0]][current[1]]['lat'], 
+                        "long" : coordinates[current[0]][current[1]]['long'],
+                        "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
+                    })
+                path_labels_bfs.append((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
+                # total_path.append(current)
+                current = came_from[current]
+            start_weather_code = str(coordinates[start[0]][start[1]]['formattedHourlyData'][hour]['weatherCode'])
+            total_path.append({
+                # "x,y" : start,
+                "lat" : coordinates[start[0]][start[1]]['lat'], 
+                "long" : coordinates[start[0]][start[1]]['long'],
+                "status" : weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "Not defined"
+                })
+            path_labels_bfs.append(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
+            # total_path.append(start)
+            return (total_path[::-1])
+
+        # Check all four possible directions
+        for dr, dc in directions:
+            new_row, new_col = current_row + dr, current_col + dc
+
+            # Check if the new position is within bounds and not yet visited
+            if 0 <= new_row and new_row < rows and 0 <= new_col and new_col < len(coordinates[new_row]) and (new_row, new_col) not in visited:
+                came_from[(new_row,new_col)] = (current_row,current_col)
+                queue.append((new_row, new_col, path))
+                visited.add((new_row, new_col))
+
+    # If the goal is not reachable, return None
+    return None
+
+
 def get_path(coordinates, source, destination):
     
     total_distance = haversine(source['lat'], source['long'], destination['lat'], destination['long'])
     sourceIndex = get_node_index(coordinates,source)
     destinationIndex = get_node_index(coordinates,destination)
 
-    path = a_star(coordinates,sourceIndex,destinationIndex)
-    risk_details = get_risk_details(path_labels)
-    return [total_distance, path, risk_details[0], risk_details[1]]
+    astar_path = a_star(coordinates,sourceIndex,destinationIndex)
+    astar_risk_details = get_risk_details(path_labels_astar)
+
+    bfs_path = bfs(coordinates,sourceIndex,destinationIndex)
+    bfs_risk_details = get_risk_details(path_labels_bfs)
+
+    return [total_distance, astar_path, astar_risk_details[0], astar_risk_details[1], bfs_path, bfs_risk_details[0], bfs_risk_details[1]]
