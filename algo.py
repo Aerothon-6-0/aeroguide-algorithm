@@ -1,5 +1,6 @@
 import math
 import heapq
+from risk import get_risk_details
 
 hour = 14 #assuming hour to be constant now, later will update it to take off timing
 
@@ -42,7 +43,7 @@ def haversine(lat1, lon1, lat2, lon2):
     dphi = math.radians(abs(lat2 - lat1))
     dlambda = math.radians(abs(lon2 - lon1))
 
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    a = (math.sin(dphi / 2) ** 2) + math.cos(phi1) * math.cos(phi2) * (math.sin(dlambda / 2) ** 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
@@ -64,7 +65,25 @@ def get_node_index(coordinates, node):
                 d = dist
                 index = (i,j)
     return index
-                
+
+
+
+def get_weather_factor(weather_details):
+    # rain snowfall cloud_cover weather_code wind_speed
+    max_rain = 4
+    max_wcode = 100
+    min_req_visibility = 100
+    max_wind_speed = 500
+
+    rainFactor = weather_details['rain'] / max_rain
+    wcodeFactor = weather_details['weatherCode'] / max_wcode
+    visibilityFactor = 0.8 if weather_details['visibility'] < min_req_visibility else 0
+    windSpeedFactor = weather_details['windSpeed180m'] / max_wind_speed
+
+    return 1 + rainFactor + wcodeFactor + visibilityFactor + windSpeedFactor
+
+path_labels = []
+
 def a_star(coordinates, start, goal):
     directions = [ [0,1], [1,0], [0,-1], [-1,0], [1,1], [1,-1], [-1,1], [-1,-1] ]
     rows = len(coordinates)
@@ -74,7 +93,8 @@ def a_star(coordinates, start, goal):
     g_score = [[float('inf') for j in range(cols)] for i in range(rows)]
     g_score[start[0]][start[1]] = 0
     f_score = [[float('inf') for j in range(cols)] for i in range(rows)]
-    f_score[start[0]][start[1]] = haversine(coordinates[start[0]][start[1]]['lat'], coordinates[start[0]][start[1]]['long'], coordinates[goal[0]][goal[1]]['lat'], coordinates[goal[0]][goal[1]]['long'])
+    f_score[start[0]][start[1]] = 0
+    # total_distance = haversine(coordinates[start[0]][start[1]]['lat'], coordinates[start[0]][start[1]]['long'], coordinates[goal[0]][goal[1]]['lat'], coordinates[goal[0]][goal[1]]['long'])
 
     while open_set:
         current = heapq.heappop(open_set)[1]
@@ -86,48 +106,68 @@ def a_star(coordinates, start, goal):
             while current in came_from:
                 weather_code = str(coordinates[current[0]][current[1]]['formattedHourlyData'][hour]['weatherCode'])
                 total_path.append({
+                        # "x,y" : current,
                         "lat" : coordinates[current[0]][current[1]]['lat'], 
                         "long" : coordinates[current[0]][current[1]]['long'],
                         "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
                     })
+                path_labels.append((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
                 # total_path.append(current)
                 current = came_from[current]
-            weather_code = str(coordinates[start[0]][start[1]]['formattedHourlyData'][hour]['weatherCode'])
+            start_weather_code = str(coordinates[start[0]][start[1]]['formattedHourlyData'][hour]['weatherCode'])
             total_path.append({
+                # "x,y" : start,
                 "lat" : coordinates[start[0]][start[1]]['lat'], 
                 "long" : coordinates[start[0]][start[1]]['long'],
-                "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
+                "status" : weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "Not defined"
                 })
+            path_labels.append(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
             # total_path.append(start)
-            return (f_score[goal[0]][goal[1]], total_path[::-1])
+            return (total_path[::-1])
         
         for d in directions:
             x = i + d[0]
             y = j + d[1]
 
-            if x >= 0 and x < rows and y >= 0 and y < cols:
+            if x >= 0 and x < rows and y >= 0 and y < len(coordinates[x]):
                 # current is (i,j)
                 # neighbour is (x,y)
-                weight = haversine(
+                # print(f"x={x} y={y}")
+                weather_factor = get_weather_factor(coordinates[x][y]['formattedHourlyData'][hour])
+                distance = haversine(
                     coordinates[x][y]['lat'], 
                     coordinates[x][y]['long'], 
                     coordinates[i][j]['lat'], 
                     coordinates[i][j]['long']
                 )
+
+                weight = distance * weather_factor
+
                 tentative_g_score = g_score[i][j] + weight
 
                 if tentative_g_score < g_score[x][y]:
                     came_from[(x,y)] = current
                     g_score[x][y] = tentative_g_score
-                    f_score[x][y] = g_score[x][y] + haversine(coordinates[x][y]['lat'], coordinates[x][y]['long'], coordinates[goal[0]][goal[1]]['lat'], coordinates[goal[0]][goal[1]]['long'])
-                    heapq.heappush(open_set, (f_score[x][y], (x,y)))
+                    f_score[x][y] = f_score[i][j] + haversine(coordinates[x][y]['lat'], coordinates[x][y]['long'], coordinates[i][j]['lat'], coordinates[i][j]['long'])
+                    heapq.heappush(open_set, (g_score[x][y], (x,y)))
 
     return None
 
 def get_path(coordinates, source, destination):
+    print(f"rows = {len(coordinates)}")
+    for i,l in enumerate(coordinates):
+        # print(f"row {i+1} size = {len(l)}")
+        print(f"row {i+1}",end=" ")
+        for j,ll in enumerate(l):
+            print(f"({ll['lat']},{ll['long']})",end=' ')
+        print()
+
+
+    
+    total_distance = haversine(source['lat'], source['long'], destination['lat'], destination['long'])
     sourceIndex = get_node_index(coordinates,source)
     destinationIndex = get_node_index(coordinates,destination)
 
     path = a_star(coordinates,sourceIndex,destinationIndex)
-
-    return path
+    risk_details = get_risk_details(path_labels)
+    return [total_distance, path, risk_details[0], risk_details[1]]
