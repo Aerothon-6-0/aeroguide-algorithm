@@ -83,8 +83,8 @@ def get_weather_factor(weather_details):
 
     return 1 + rainFactor + wcodeFactor + visibilityFactor + windSpeedFactor
 
-path_labels_astar = []
-path_labels_bfs = []
+path_labels_astar = set()
+path_labels_bfs = set()
 directions = [ [0,1], [1,0], [0,-1], [-1,0], [1,1], [1,-1], [-1,1], [-1,-1] ]
 
 def a_star(coordinates, start, goal):
@@ -115,7 +115,7 @@ def a_star(coordinates, start, goal):
                         "long" : coordinates[current[0]][current[1]]['long'],
                         "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
                     })
-                path_labels_astar.append((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
+                path_labels_astar.add((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
                 # total_path.append(current)
                 current = came_from[current]
             start_weather_code = str(coordinates[start[0]][start[1]]['formattedHourlyData'][hour]['weatherCode'])
@@ -125,7 +125,7 @@ def a_star(coordinates, start, goal):
                 "long" : coordinates[start[0]][start[1]]['long'],
                 "status" : weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "Not defined"
                 })
-            path_labels_astar.append(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
+            path_labels_astar.add(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
             # total_path.append(start)
             return (total_path[::-1])
         
@@ -189,7 +189,7 @@ def bfs(coordinates, start, goal):
                         "long" : coordinates[current[0]][current[1]]['long'],
                         "status" : weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else "Not defined"
                     })
-                path_labels_bfs.append((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
+                path_labels_bfs.add((weatherCodeStatus[weather_code] if weather_code in weatherCodeStatus else ""))
                 # total_path.append(current)
                 current = came_from[current]
             start_weather_code = str(coordinates[start[0]][start[1]]['formattedHourlyData'][hour]['weatherCode'])
@@ -199,7 +199,7 @@ def bfs(coordinates, start, goal):
                 "long" : coordinates[start[0]][start[1]]['long'],
                 "status" : weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "Not defined"
                 })
-            path_labels_bfs.append(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
+            path_labels_bfs.add(weatherCodeStatus[start_weather_code] if start_weather_code in weatherCodeStatus else "")
             # total_path.append(start)
             return (total_path[::-1])
 
@@ -224,9 +224,11 @@ def get_path(coordinates, source, destination):
     destinationIndex = get_node_index(coordinates,destination)
 
     astar_path = a_star(coordinates,sourceIndex,destinationIndex)
+    print(path_labels_astar)
     astar_risk_details = get_risk_details(path_labels_astar)
 
     bfs_path = bfs(coordinates,sourceIndex,destinationIndex)
+    print(path_labels_bfs)
     bfs_risk_details = get_risk_details(path_labels_bfs)
 
     return [total_distance, astar_path, astar_risk_details[0], astar_risk_details[1], bfs_path, bfs_risk_details[0], bfs_risk_details[1]]

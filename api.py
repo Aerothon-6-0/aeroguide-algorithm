@@ -15,7 +15,6 @@ async def root() :
 
 @app.post("/")
 async def getData(item : Item):
-    print(f"requested data :\n{item}")
     data = get_path(item.coordinates, item.source, item.destination)
 
 
