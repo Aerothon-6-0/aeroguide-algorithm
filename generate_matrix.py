@@ -25,12 +25,15 @@ def generateMatrix(source,destination) :
     maxLong = max(sourceLong,destinationLong) + buffer
 
     matrix = []
-
-    for i in range(minLat,maxLat+1,buffer):
+    i = minLat
+    while(i <= maxLat):
         row = []
-        for j in range(minLong,maxLong+1,buffer):
+        j = minLong
+        while j <= maxLong:
             row.append({'lat' : i, 'long' : j})
             # row.append((i,j))
+            j = j + buffer
         matrix.append(row)
+        i = i + buffer
 
     return matrix
