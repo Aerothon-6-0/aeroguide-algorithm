@@ -88,13 +88,15 @@ path_labels_bfs = []
 directions = [ [0,1], [1,0], [0,-1], [-1,0], [1,1], [1,-1], [-1,1], [-1,-1] ]
 
 def a_star(coordinates, start, goal):
+    print(f"start: {start} goal: {goal}")
     rows = len(coordinates)
     cols = len(coordinates[0])
+    print(f"rows: {rows} cols: {cols}")
     open_set = [(0,start)]
     came_from = {}
-    g_score = [[float('inf') for j in range(cols)] for i in range(rows)]
+    g_score = [[float('inf') for j in range(len(coordinates[i]))] for i in range(rows)]
     g_score[start[0]][start[1]] = 0
-    f_score = [[float('inf') for j in range(cols)] for i in range(rows)]
+    f_score = [[float('inf') for j in range(len(coordinates[i]))] for i in range(rows)]
     f_score[start[0]][start[1]] = 0
     # total_distance = haversine(coordinates[start[0]][start[1]]['lat'], coordinates[start[0]][start[1]]['long'], coordinates[goal[0]][goal[1]]['lat'], coordinates[goal[0]][goal[1]]['long'])
 
@@ -161,8 +163,8 @@ def bfs(coordinates, start, goal):
     goal_row, goal_col = goal
 
     # Check if the starting or goal point is within the bounds of the matrix
-    if not (0 <= start_row < rows and 0 <= start_col < cols) or not (0 <= goal_row < rows and 0 <= goal_col < cols):
-        return None
+    # if not (0 <= start_row < rows and 0 <= start_col < cols) or not (0 <= goal_row < rows and 0 <= goal_col < cols):
+    #     return None
 
     # Initialize a queue and visited set
     queue = deque([(start_row, start_col, [])])
