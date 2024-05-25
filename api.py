@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from algo import get_path
+from generate_matrix import generateMatrix
 
 app = FastAPI()
 
@@ -8,6 +9,10 @@ class Item(BaseModel):
     source : dict
     destination : dict
     coordinates: list
+
+class LatLong(BaseModel):
+    source : dict
+    destination : dict
 
 @app.get("/")
 async def root() :
@@ -27,5 +32,9 @@ async def getData(item : Item):
         "path2_risk_message" : data[6],
         "path2" :data[4],
     }
+
+@app.post("/getMatrix/")
+async def getMatrix(item : LatLong) :
+    return {'matrix' : generateMatrix([item.source['lat'],item.source['long']],[item.destination['lat'],item.destination['long']])}
 
 

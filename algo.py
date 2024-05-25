@@ -137,7 +137,7 @@ def a_star(coordinates, start, goal):
                 # current is (i,j)
                 # neighbour is (x,y)
                 # print(f"x={x} y={y}")
-                weather_factor = get_weather_factor(coordinates[x][y]['formattedHourlyData'][hour])
+                weather_factor = get_weather_factor(coordinates[x][y]['formattedHourlyData'][hour]) / 10
                 distance = haversine(
                     coordinates[x][y]['lat'], 
                     coordinates[x][y]['long'], 
@@ -174,7 +174,7 @@ def bfs(coordinates, start, goal):
 
     while queue:
         current_row, current_col, path = queue.popleft()
-        print(current_row,current_col)
+        # print(current_row,current_col)
         # path = path + [(current_row, current_col)]
 
         # If we reach the goal, return the path
@@ -224,11 +224,9 @@ def get_path(coordinates, source, destination):
     destinationIndex = get_node_index(coordinates,destination)
 
     astar_path = a_star(coordinates,sourceIndex,destinationIndex)
-    print(path_labels_astar)
     astar_risk_details = get_risk_details(path_labels_astar)
 
     bfs_path = bfs(coordinates,sourceIndex,destinationIndex)
-    print(path_labels_bfs)
     bfs_risk_details = get_risk_details(path_labels_bfs)
 
     return [total_distance, astar_path, astar_risk_details[0], astar_risk_details[1], bfs_path, bfs_risk_details[0], bfs_risk_details[1]]
